@@ -11,11 +11,11 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   constructor(private configService: ConfigService) {
     this.client = new Client({
       authStrategy: new LocalAuth({
-        clientId: 'owner',
+        dataPath: this.configService.get('whatsapp.sessionPath'),
       }),
       puppeteer: {
         args: ['--no-sandbox'],
-      },
+      }
     });
 
     this.client.on('qr', (qr) => {
@@ -71,23 +71,14 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async sendDebtReminder(
-    phone: string,
-    debtorName: string,
-    amount: number,
-    dueDate: Date,
-  ): Promise<void> {
+  async sendDebtReminder(phone: string, debtorName: string, amount: number, dueDate: Date): Promise<void> {
     await this.ensureReady();
 
     const formattedPhone = this.formatPhoneNumber(phone);
-    const formattedAmount = amount.toLocaleString('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-    });
+    const formattedAmount = amount.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' });
     const formattedDate = dueDate.toLocaleDateString('ru-RU');
 
-    const message =
-      `Здравствуйте, ${debtorName}!\n\n` +
+    const message = `Здравствуйте, ${debtorName}!\n\n` +
       `Напоминаем о необходимости погасить долг в размере ${formattedAmount} до ${formattedDate}.\n\n` +
       'Пожалуйста, не игнорируйте это сообщение.';
 
@@ -99,23 +90,14 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async sendOverdueNotification(
-    phone: string,
-    debtorName: string,
-    amount: number,
-    dueDate: Date,
-  ): Promise<void> {
+  async sendOverdueNotification(phone: string, debtorName: string, amount: number, dueDate: Date): Promise<void> {
     await this.ensureReady();
 
     const formattedPhone = this.formatPhoneNumber(phone);
-    const formattedAmount = amount.toLocaleString('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-    });
+    const formattedAmount = amount.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' });
     const formattedDate = dueDate.toLocaleDateString('ru-RU');
 
-    const message =
-      `Здравствуйте, ${debtorName}!\n\n` +
+    const message = `Здравствуйте, ${debtorName}!\n\n` +
       `Срок погашения долга в размере ${formattedAmount} истек ${formattedDate}.\n` +
       'Пожалуйста, погасите задолженность в ближайшее время.\n\n' +
       'В случае игнорирования этого сообщения мы будем вынуждены принять соответствующие меры.';
@@ -132,4 +114,4 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     // Удаляем все нецифровые символы
     return phone.replace(/\D/g, '');
   }
-}
+} 
