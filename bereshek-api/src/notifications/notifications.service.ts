@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { WhatsappService } from './whatsapp.service';
 import { DebtsService } from '../debts/debts.service';
+import { UsersService } from '../users/users.service';
 import { DebtStatus } from '../debts/entities/debt.entity';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class NotificationsService {
   constructor(
     private whatsappService: WhatsappService,
     private debtsService: DebtsService,
+    private usersService: UsersService,
   ) {}
 
   // Проверка долгов каждый день в 10:00
@@ -19,7 +21,6 @@ export class NotificationsService {
   }
 
   private async checkUpcomingDebts() {
-    // Получаем всех пользователей с долгами
     const users = await this.getAllUsersWithDebts();
 
     for (const user of users) {
@@ -81,9 +82,7 @@ export class NotificationsService {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
 
-  // Этот метод нужно будет реализовать для получения всех пользователей с активными долгами
-  private async getAllUsersWithDebts() {
-    // TODO: Реализовать получение пользователей с активными долгами
-    return []; // Временная заглушка
+  private async getAllUsersWithDebts(): Promise<any[]> {
+    return await this.usersService.findUsersWithActiveDebts();
   }
 } 

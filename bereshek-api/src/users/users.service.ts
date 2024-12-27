@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
+import { DebtStatus } from '../debts/entities/debt.entity';
 
 @Injectable()
 export class UsersService {
@@ -26,5 +27,15 @@ export class UsersService {
 
   async findByEmail(email: string): Promise<User> {
     return await this.usersRepository.findOneBy({ email });
+  }
+
+  async findUsersWithActiveDebts(): Promise<User[]> {
+    return await this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.debtors', 'debtor')
+      .leftJoinAndSelect('debtor.debts', 'debt')
+      .where('debt.status = :status', { status: DebtStatus.ACTIVE })
+      .orWhere('debt.status = :overdueStatus', { overdueStatus: DebtStatus.OVERDUE })
+      .getMany();
   }
 } 

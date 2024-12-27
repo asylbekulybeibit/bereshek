@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Debtor } from './entities/debtor.entity';
 import { CreateDebtorDto } from './dto/create-debtor.dto';
-import { User } from '../users/entities/user.entity';
+import { FilterDebtorDto } from './dto/filter-debtor.dto';
+import { DebtStatus } from '../debts/entities/debt.entity';
 
 @Injectable()
 export class DebtorsService {
@@ -12,19 +13,58 @@ export class DebtorsService {
     private debtorsRepository: Repository<Debtor>,
   ) {}
 
-  async create(createDebtorDto: CreateDebtorDto, user: User): Promise<Debtor> {
+  async create(createDebtorDto: CreateDebtorDto, userId: string): Promise<Debtor> {
     const debtor = this.debtorsRepository.create({
       ...createDebtorDto,
-      user,
+      user: { id: userId },
     });
     return await this.debtorsRepository.save(debtor);
   }
 
-  async findAll(userId: string): Promise<Debtor[]> {
-    return await this.debtorsRepository.find({
-      where: { user: { id: userId } },
-      relations: ['debts'],
-    });
+  async findAll(userId: string, filterDto?: FilterDebtorDto): Promise<Debtor[]> {
+    const query = this.debtorsRepository.createQueryBuilder('debtor')
+      .leftJoinAndSelect('debtor.debts', 'debt')
+      .where('debtor.user.id = :userId', { userId });
+
+    if (filterDto) {
+      this.applyFilters(query, filterDto);
+    }
+
+    if (filterDto?.sortBy) {
+      const order = filterDto.sortOrder || 'ASC';
+      query.orderBy(`debtor.${filterDto.sortBy}`, order);
+    } else {
+      query.orderBy('debtor.createdAt', 'DESC');
+    }
+
+    return await query.getMany();
+  }
+
+  private applyFilters(query: any, filterDto: FilterDebtorDto) {
+    const { search, isProblematic, hasActiveDebts, hasOverdueDebts } = filterDto;
+
+    if (search) {
+      query.andWhere(
+        '(debtor.firstName ILIKE :search OR debtor.lastName ILIKE :search OR debtor.phone ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (isProblematic !== undefined) {
+      query.andWhere('debtor.isProblematic = :isProblematic', { isProblematic });
+    }
+
+    if (hasActiveDebts) {
+      query.andWhere('EXISTS (SELECT 1 FROM debt WHERE debt.debtor = debtor.id AND debt.status = :activeStatus)', 
+        { activeStatus: DebtStatus.ACTIVE }
+      );
+    }
+
+    if (hasOverdueDebts) {
+      query.andWhere('EXISTS (SELECT 1 FROM debt WHERE debt.debtor = debtor.id AND debt.status = :overdueStatus)',
+        { overdueStatus: DebtStatus.OVERDUE }
+      );
+    }
   }
 
   async findOne(id: string, userId: string): Promise<Debtor> {
@@ -40,22 +80,9 @@ export class DebtorsService {
     return debtor;
   }
 
-  async findById(id: string): Promise<Debtor> {
-    const debtor = await this.debtorsRepository.findOne({
-      where: { id },
-      relations: ['debts'],
-    });
-
-    if (!debtor) {
-      throw new NotFoundException('Debtor not found');
-    }
-
-    return debtor;
-  }
-
-  async update(id: string, updateDebtorDto: Partial<CreateDebtorDto>, userId: string): Promise<Debtor> {
+  async update(id: string, updateData: Partial<Debtor>, userId: string): Promise<Debtor> {
     const debtor = await this.findOne(id, userId);
-    Object.assign(debtor, updateDebtorDto);
+    Object.assign(debtor, updateData);
     return await this.debtorsRepository.save(debtor);
   }
 
