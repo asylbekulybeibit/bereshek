@@ -1,0 +1,80 @@
+.debt-details-container {
+  padding: 20px;
+
+  mat-card {
+    max-width: 800px;
+    margin: 0 auto;
+
+    mat-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+
+      .header-actions {
+        display: flex;
+        gap: 8px;
+
+        button {
+          mat-icon {
+            margin-right: 8px;
+          }
+        }
+      }
+    }
+
+    mat-card-content {
+      .debt-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+
+        .info-section {
+          h3 {
+            margin-bottom: 16px;
+            color: #333;
+          }
+
+          .info-item {
+            margin-bottom: 12px;
+
+            strong {
+              display: inline-block;
+              width: 120px;
+              font-weight: 500;
+            }
+
+            .status-pending {
+              color: #ff9800;
+            }
+
+            .status-paid {
+              color: #4caf50;
+            }
+
+            .status-overdue {
+              color: #f44336;
+            }
+          }
+        }
+      }
+
+      .error-message {
+        color: #f44336;
+        text-align: center;
+        margin: 16px 0;
+      }
+    }
+  }
+
+  .loading-message {
+    text-align: center;
+    margin: 32px 0;
+  }
+
+  .error-message {
+    color: #f44336;
+    text-align: center;
+    margin: 16px 0;
+  }
+}

@@ -1,0 +1,91 @@
+.debtor-details-container {
+  padding: 20px;
+
+  mat-card {
+    mat-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+
+      .header-actions {
+        display: flex;
+        gap: 8px;
+
+        button {
+          mat-icon {
+            margin-right: 8px;
+          }
+        }
+      }
+    }
+
+    mat-card-content {
+      .debtor-info {
+        margin-bottom: 32px;
+
+        .info-item {
+          margin-bottom: 16px;
+
+          strong {
+            display: inline-block;
+            width: 100px;
+            font-weight: 500;
+          }
+        }
+      }
+
+      .debts-section {
+        h2 {
+          margin-bottom: 16px;
+        }
+
+        table {
+          width: 100%;
+
+          .mat-column-actions {
+            width: 160px;
+            text-align: right;
+
+            button {
+              margin-left: 8px;
+            }
+          }
+
+          .status-pending {
+            color: #ff9800;
+          }
+
+          .status-paid {
+            color: #4caf50;
+          }
+
+          .status-overdue {
+            color: #f44336;
+          }
+
+          .mat-mdc-row:hover {
+            background-color: #f5f5f5;
+          }
+        }
+
+        .no-debts-message {
+          text-align: center;
+          margin: 32px 0;
+          color: #666;
+        }
+      }
+    }
+  }
+
+  .loading-message {
+    text-align: center;
+    margin: 32px 0;
+  }
+
+  .error-message {
+    color: #f44336;
+    text-align: center;
+    margin: 16px 0;
+  }
+}

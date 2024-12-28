@@ -6,6 +6,9 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
+  // Enable CORS
+  app.enableCors();
+  
   app.useGlobalPipes(new ValidationPipe({
     transform: true,
     whitelist: true,
@@ -21,6 +24,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = 3001;
+  await app.listen(port, 'localhost');
+  console.log(`Application is running on: http://localhost:${port}`);
+  console.log(`Swagger UI is available at: http://localhost:${port}/api`);
 }
 bootstrap();

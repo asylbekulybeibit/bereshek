@@ -1,0 +1,49 @@
+<div class="login-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Вход в систему</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="form-field">
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" placeholder="Введите ваш email">
+            <mat-error *ngIf="loginForm.get('email')?.errors?.['required']">
+              Email обязателен
+            </mat-error>
+            <mat-error *ngIf="loginForm.get('email')?.errors?.['email']">
+              Пожалуйста, введите корректный email адрес
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field">
+          <mat-form-field appearance="outline">
+            <mat-label>Пароль</mat-label>
+            <input matInput type="password" formControlName="password" placeholder="Введите ваш пароль">
+            <mat-error *ngIf="loginForm.get('password')?.errors?.['required']">
+              Пароль обязателен
+            </mat-error>
+            <mat-error *ngIf="loginForm.get('password')?.errors?.['minlength']">
+              Пароль должен быть не менее 6 символов
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="error-message" *ngIf="error">
+          {{ error }}
+        </div>
+
+        <div class="form-actions">
+          <button mat-raised-button color="primary" type="submit" [disabled]="loginForm.invalid || loading">
+            <mat-spinner diameter="20" *ngIf="loading"></mat-spinner>
+            <span *ngIf="!loading">Войти</span>
+          </button>
+          <a mat-button routerLink="/auth/register">Нет аккаунта? Зарегистрироваться</a>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

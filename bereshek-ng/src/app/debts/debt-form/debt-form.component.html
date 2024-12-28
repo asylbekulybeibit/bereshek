@@ -1,0 +1,71 @@
+<div class="debt-form-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>{{ isEditMode ? 'Edit' : 'Add' }} Debt</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="debtForm" (ngSubmit)="onSubmit()">
+        <div class="form-field">
+          <mat-form-field appearance="outline">
+            <mat-label>Debtor</mat-label>
+            <mat-select formControlName="debtor_id">
+              <mat-option *ngFor="let debtor of debtors" [value]="debtor.id">
+                {{ debtor.firstName }} {{ debtor.lastName }}  
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="debtForm.get('debtor_id')?.errors?.['required']">
+              Debtor is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field">
+          <mat-form-field appearance="outline">
+            <mat-label>Amount</mat-label>
+            <input matInput type="number" formControlName="amount" placeholder="Enter debt amount">
+            <mat-error *ngIf="debtForm.get('amount')?.errors?.['required']">
+              Amount is required
+            </mat-error>
+            <mat-error *ngIf="debtForm.get('amount')?.errors?.['min']">
+              Amount must be greater than 0
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field">
+          <mat-form-field appearance="outline">
+            <mat-label>Description</mat-label>
+            <textarea matInput formControlName="description" placeholder="Enter debt description" rows="3"></textarea>
+            <mat-error *ngIf="debtForm.get('description')?.errors?.['required']">
+              Description is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field">
+          <mat-form-field appearance="outline">
+            <mat-label>Due Date</mat-label>
+            <input matInput [matDatepicker]="picker" formControlName="due_date" placeholder="Choose a due date">
+            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+            <mat-error *ngIf="debtForm.get('due_date')?.errors?.['required']">
+              Due date is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="error-message" *ngIf="error">
+          {{ error }}
+        </div>
+
+        <div class="form-actions">
+          <button mat-raised-button color="primary" type="submit" [disabled]="debtForm.invalid || loading">
+            {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update' : 'Create') }}
+          </button>
+          <button mat-button type="button" routerLink="/debts">Cancel</button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

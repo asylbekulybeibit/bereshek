@@ -1,0 +1,41 @@
+.debtor-form-container {
+  padding: 20px;
+
+  mat-card {
+    max-width: 600px;
+    margin: 0 auto;
+
+    mat-card-header {
+      margin-bottom: 20px;
+    }
+
+    mat-card-content {
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .form-field {
+          width: 100%;
+
+          mat-form-field {
+            width: 100%;
+          }
+        }
+
+        .error-message {
+          color: #f44336;
+          text-align: center;
+          margin: 8px 0;
+        }
+
+        .form-actions {
+          display: flex;
+          gap: 16px;
+          justify-content: flex-end;
+          margin-top: 16px;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,78 @@
+<div class="debt-details-container">
+  <mat-card *ngIf="!loading && debt && debtor">
+    <mat-card-header>
+      <mat-card-title>Debt Details</mat-card-title>
+      <div class="header-actions">
+        <button mat-raised-button color="primary" (click)="markAsPaid()" *ngIf="debt.status !== 'PAID'">
+          <mat-icon>check_circle</mat-icon>
+          Mark as Paid
+        </button>
+        <button mat-raised-button color="accent" [routerLink]="['edit']">
+          <mat-icon>edit</mat-icon>
+          Edit
+        </button>
+        <button mat-raised-button color="warn" (click)="deleteDebt()">
+          <mat-icon>delete</mat-icon>
+          Delete
+        </button>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="debt-info">
+        <div class="info-section">
+          <h3>Debt Information</h3>
+          <div class="info-item">
+            <strong>Amount:</strong>
+            <span>{{ debt.amount | currency }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Description:</strong>
+            <span>{{ debt.description }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Due Date:</strong>
+            <span>{{ debt.due_date | date }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Status:</strong>
+            <span [class]="'status-' + debt.status.toLowerCase()">{{ debt.status }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Created:</strong>
+            <span>{{ debt.created_at | date }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Last Updated:</strong>
+            <span>{{ debt.updated_at | date }}</span>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h3>Debtor Information</h3>
+          <div class="info-item">
+            <strong>Name:</strong>
+            <span>{{ debtor.name }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Email:</strong>
+            <span>{{ debtor.email }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Phone:</strong>
+            <span>{{ debtor.phone }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Address:</strong>
+            <span>{{ debtor.address }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="error-message" *ngIf="error">{{ error }}</div>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="loading-message" *ngIf="loading">Loading debt details...</div>
+  <div class="error-message" *ngIf="!loading && error">{{ error }}</div>
+</div>
