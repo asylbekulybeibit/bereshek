@@ -4,10 +4,14 @@ import { BehaviorSubject, Observable, tap, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface User {
-  id: number;
-  username: string;
+  id: string;
   email: string;
-  token: string;
+  firstName: string;
+  lastName: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  token?: string;
 }
 
 export interface LoginRequest {
@@ -23,11 +27,7 @@ export interface RegisterRequest {
 
 export interface AuthResponse {
   access_token: string;
-  user: {
-    id: number;
-    username: string;
-    email: string;
-  }
+  user: User;
 }
 
 @Injectable({
@@ -52,8 +52,12 @@ export class AuthService {
   private mapAuthResponseToUser(response: AuthResponse): User {
     return {
       id: response.user.id,
-      username: response.user.username,
       email: response.user.email,
+      firstName: response.user.firstName,
+      lastName: response.user.lastName,
+      isActive: response.user.isActive,
+      createdAt: response.user.createdAt,
+      updatedAt: response.user.updatedAt,
       token: response.access_token
     };
   }

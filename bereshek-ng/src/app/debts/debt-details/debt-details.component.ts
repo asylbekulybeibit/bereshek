@@ -7,9 +7,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDividerModule } from '@angular/material/divider';
 
 import { DebtorsService } from '../../core/services/debtors.service';
-import { Debtor, Debt } from '../../core/models/debt.model';
+import { Debtor, Debt, DebtStatus } from '../../core/models/debt.model';
 
 @Component({
   selector: 'app-debt-details',
@@ -21,52 +22,61 @@ import { Debtor, Debt } from '../../core/models/debt.model';
     MatIconModule,
     MatChipsModule,
     MatButtonModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatDividerModule
   ],
   template: `
     <div class="details-container">
       <mat-card>
         <mat-card-header>
           <mat-card-title>
-            Долги {{ debtor ? debtor.firstName + ' ' + debtor.lastName : 'Загрузка...' }}
-            <mat-icon *ngIf="debtor?.isProblematic" 
-                     color="warn" 
-                     class="problematic-icon"
-                     matTooltip="Проблемный клиент">
-              warning
-            </mat-icon>
+            {{ debtor ? debtor.firstName + ' ' + debtor.lastName : 'Загрузка...' }}
+            <mat-chip-set *ngIf="hasOverdueDebts()">
+              <mat-chip color="warn" selected>Есть просроченные долги</mat-chip>
+            </mat-chip-set>
           </mat-card-title>
           <mat-card-subtitle>
-            Общая сумма: {{ debtor?.totalDebt | currency:'RUB':'symbol-narrow':'1.0-0' }}
+            Общая сумма: {{ getTotalDebt() | currency:'KZT':'symbol-narrow':'1.0-0' }}
           </mat-card-subtitle>
         </mat-card-header>
+
         <mat-card-content>
           <div class="contact-info">
-            <p><strong>Телефон:</strong> {{ debtor?.phone }}</p>
-            <p><strong>WhatsApp:</strong> {{ debtor?.whatsapp || 'Не указан' }}</p>
+            <p>
+              <mat-icon>phone</mat-icon>
+              <strong>Телефон:</strong> {{ debtor?.phone }}
+            </p>
+            <p *ngIf="debtor?.whatsapp">
+              <mat-icon>whatsapp</mat-icon>
+              <strong>WhatsApp:</strong> {{ debtor?.whatsapp }}
+            </p>
           </div>
 
           <h3>История долгов</h3>
           <mat-list>
-            <mat-list-item *ngFor="let debt of debtor?.debts">
+            <mat-list-item *ngFor="let debt of sortedDebts()" class="debt-list-item">
               <div class="debt-item">
                 <div class="debt-info">
-                  <h4>{{ debt.amount | currency:'RUB':'symbol-narrow':'1.0-0' }}</h4>
-                  <p>{{ debt.description }}</p>
-                  <p class="dates">
-                    <span>Взят: {{ debt.borrowDate | date:'dd.MM.yyyy' }}</span>
-                    <span>Вернуть до: {{ debt.dueDate | date:'dd.MM.yyyy' }}</span>
-                  </p>
-                </div>
-                <div class="debt-status">
-                  <mat-chip-set>
-                    <mat-chip [color]="debt.isPaid ? 'primary' : (debt.isOverdue ? 'warn' : 'accent')"
-                             highlighted>
-                      {{ debt.isPaid ? 'Оплачен' : (debt.isOverdue ? 'Просрочен' : 'Активен') }}
-                    </mat-chip>
-                  </mat-chip-set>
+                  <div class="debt-header">
+                    <h4>{{ debt.amount | currency:'KZT':'symbol-narrow':'1.0-0' }}</h4>
+                    <span class="debt-status" [class]="debt.status">
+                      {{ getStatusText(debt.status) }}
+                    </span>
+                  </div>
+                  <p *ngIf="debt.description" class="debt-description">{{ debt.description }}</p>
+                  <div class="debt-dates">
+                    <span>
+                      <mat-icon>event</mat-icon>
+                      Создан: {{ debt.createdAt | date:'dd.MM.yyyy' }}
+                    </span>
+                    <span [class.overdue]="isOverdue(parseDate(debt.dueDate))">
+                      <mat-icon>event_available</mat-icon>
+                      Срок: {{ debt.dueDate | date:'dd.MM.yyyy' }}
+                    </span>
+                  </div>
                 </div>
               </div>
+              <mat-divider></mat-divider>
             </mat-list-item>
           </mat-list>
         </mat-card-content>
@@ -80,14 +90,6 @@ import { Debtor, Debt } from '../../core/models/debt.model';
       margin: 0 auto;
     }
 
-    .problematic-icon {
-      font-size: 20px;
-      height: 20px;
-      width: 20px;
-      vertical-align: middle;
-      margin-left: 8px;
-    }
-
     .contact-info {
       margin: 20px 0;
       padding: 16px;
@@ -96,45 +98,92 @@ import { Debtor, Debt } from '../../core/models/debt.model';
 
       p {
         margin: 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        mat-icon {
+          color: rgba(0, 0, 0, 0.54);
+        }
       }
+    }
+
+    .debt-list-item {
+      margin-bottom: 16px;
     }
 
     .debt-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
       width: 100%;
       padding: 16px 0;
-      border-bottom: 1px solid #e0e0e0;
 
-      &:last-child {
-        border-bottom: none;
-      }
-    }
-
-    .debt-info {
-      flex: 1;
-
-      h4 {
-        margin: 0 0 8px 0;
-        font-weight: 500;
-      }
-
-      p {
-        margin: 4px 0;
-        color: rgba(0, 0, 0, 0.7);
-      }
-
-      .dates {
+      .debt-header {
         display: flex;
-        gap: 16px;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+
+        h4 {
+          margin: 0;
+          font-size: 1.2em;
+          font-weight: 500;
+        }
+      }
+
+      .debt-status {
+        padding: 4px 8px;
+        border-radius: 4px;
         font-size: 0.9em;
-        color: rgba(0, 0, 0, 0.6);
+        
+        &.ACTIVE {
+          background-color: #e8f5e9;
+          color: #2e7d32;
+        }
+        
+        &.OVERDUE {
+          background-color: #ffebee;
+          color: #c62828;
+        }
+        
+        &.PAID {
+          background-color: #e3f2fd;
+          color: #1565c0;
+        }
+      }
+
+      .debt-description {
+        margin: 8px 0;
+        color: rgba(0, 0, 0, 0.87);
+      }
+
+      .debt-dates {
+        display: flex;
+        justify-content: space-between;
+        color: rgba(0, 0, 0, 0.54);
+        font-size: 0.9em;
+        margin-top: 8px;
+
+        span {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+
+          &.overdue {
+            color: #f44336;
+          }
+
+          mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+          }
+        }
       }
     }
 
-    .debt-status {
-      margin-left: 16px;
+    mat-card-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
   `]
 })
@@ -147,13 +196,14 @@ export class DebtDetailsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const debtorId = Number(this.route.snapshot.paramMap.get('id'));
-    if (debtorId) {
-      this.loadDebtor(debtorId);
-    }
+    this.route.params.subscribe(params => {
+      if (params['id']) {
+        this.loadDebtor(params['id']);
+      }
+    });
   }
 
-  loadDebtor(id: number): void {
+  loadDebtor(id: string): void {
     this.debtorsService.getDebtor(id).subscribe({
       next: (debtor) => {
         this.debtor = debtor;
@@ -161,6 +211,51 @@ export class DebtDetailsComponent implements OnInit {
       error: (error) => {
         console.error('Error loading debtor:', error);
       }
+    });
+  }
+
+  getTotalDebt(): number {
+    if (!this.debtor?.debts) return 0;
+    return this.debtor.debts.reduce((total, debt) => total + debt.amount, 0);
+  }
+
+  parseDate(dateStr: string): Date {
+    return new Date(dateStr);
+  }
+
+  isOverdue(date: Date): boolean {
+    return date < new Date();
+  }
+
+  hasOverdueDebts(): boolean {
+    if (!this.debtor?.debts) return false;
+    return this.debtor.debts.some(debt => 
+      debt.status === 'OVERDUE' || 
+      (debt.status === 'ACTIVE' && this.isOverdue(this.parseDate(debt.dueDate)))
+    );
+  }
+
+  getStatusText(status: DebtStatus): string {
+    const statusTexts: Record<DebtStatus, string> = {
+      'ACTIVE': 'Активен',
+      'OVERDUE': 'Просрочен',
+      'PAID': 'Оплачен'
+    };
+    return statusTexts[status];
+  }
+
+  sortedDebts(): Debt[] {
+    if (!this.debtor?.debts) return [];
+    return [...this.debtor.debts].sort((a, b) => {
+      const statusOrder: Record<DebtStatus, number> = {
+        'OVERDUE': 0,
+        'ACTIVE': 1,
+        'PAID': 2
+      };
+      if (statusOrder[a.status] !== statusOrder[b.status]) {
+        return statusOrder[a.status] - statusOrder[b.status];
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }
 }

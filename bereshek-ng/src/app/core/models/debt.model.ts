@@ -1,11 +1,9 @@
 export interface Debtor {
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
   phone: string;
-  whatsapp: string;
-  totalDebt: number;
-  isProblematic: boolean;
+  whatsapp?: string;
   debts: Debt[];
 }
 
@@ -13,26 +11,24 @@ export interface CreateDebtorDto {
   firstName: string;
   lastName: string;
   phone: string;
-  whatsapp: string;
+  whatsapp?: string;
 }
 
+export type DebtStatus = 'ACTIVE' | 'OVERDUE' | 'PAID';
+
 export interface Debt {
-  id: number;
+  id: string;
   amount: number;
-  borrowDate: Date;
-  dueDate: Date;
-  description: string;
-  isPaid: boolean;
-  isOverdue: boolean;
-  debtorId: number;
+  createdAt: string;
+  dueDate: string;
+  description?: string;
+  status: DebtStatus;
+  debtorId: string;
 }
 
 export interface CreateDebtDto {
   amount: number;
-  borrowDate: string;
   dueDate: string;
-  description: string;
-  debtorId: number;
-  isPaid?: boolean;
-  isOverdue?: boolean;
+  description?: string;
+  debtorId: string;
 } 

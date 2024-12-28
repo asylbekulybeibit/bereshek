@@ -5,14 +5,14 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { DebtorsService } from '../../core/services/debtors.service';
 import { DebtsService } from '../../core/services/debts.service';
-import { Debtor, CreateDebtDto } from '../../core/models/debt.model';
+import { Debtor } from '../../core/models/debt.model';
 
 @Component({
   selector: 'app-debt-form',
@@ -23,31 +23,27 @@ import { Debtor, CreateDebtDto } from '../../core/models/debt.model';
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
     MatButtonModule,
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    MatProgressSpinnerModule
   ],
   template: `
     <div class="form-container">
       <mat-card>
         <mat-card-header>
-          <mat-card-title>Добавить долг</mat-card-title>
+          <mat-card-title>
+            <ng-container *ngIf="selectedDebtor; else loading">
+              Добавить долг для {{ selectedDebtor.firstName }} {{ selectedDebtor.lastName }}
+            </ng-container>
+            <ng-template #loading>
+              <span>Загрузка...</span>
+              <mat-spinner diameter="20"></mat-spinner>
+            </ng-template>
+          </mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <form [formGroup]="debtForm" (ngSubmit)="onSubmit()">
-            <mat-form-field appearance="outline">
-              <mat-label>Должник</mat-label>
-              <mat-select formControlName="debtorId">
-                <mat-option *ngFor="let debtor of debtors" [value]="debtor.id">
-                  {{debtor.firstName}} {{debtor.lastName}}
-                </mat-option>
-              </mat-select>
-              <mat-error *ngIf="debtForm.get('debtorId')?.hasError('required')">
-                Выберите должника
-              </mat-error>
-            </mat-form-field>
-
             <mat-form-field appearance="outline">
               <mat-label>Сумма</mat-label>
               <input matInput type="number" formControlName="amount" placeholder="Введите сумму">
@@ -60,12 +56,12 @@ import { Debtor, CreateDebtDto } from '../../core/models/debt.model';
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Дата взятия</mat-label>
+              <mat-label>Дата взятия долга</mat-label>
               <input matInput [matDatepicker]="borrowPicker" formControlName="borrowDate">
               <mat-datepicker-toggle matSuffix [for]="borrowPicker"></mat-datepicker-toggle>
               <mat-datepicker #borrowPicker></mat-datepicker>
               <mat-error *ngIf="debtForm.get('borrowDate')?.hasError('required')">
-                Дата взятия обязательна
+                Дата взятия долга обязательна
               </mat-error>
             </mat-form-field>
 
@@ -82,13 +78,13 @@ import { Debtor, CreateDebtDto } from '../../core/models/debt.model';
             <mat-form-field appearance="outline">
               <mat-label>Описание</mat-label>
               <textarea matInput formControlName="description" placeholder="Введите описание" rows="3"></textarea>
-              <mat-error *ngIf="debtForm.get('description')?.hasError('required')">
-                Описание обязательно
-              </mat-error>
             </mat-form-field>
 
             <div class="form-actions">
-              <button mat-raised-button color="primary" type="submit" [disabled]="debtForm.invalid">
+              <button mat-button type="button" (click)="goBack()">
+                Отмена
+              </button>
+              <button mat-raised-button color="primary" type="submit" [disabled]="debtForm.invalid || !selectedDebtor">
                 Сохранить
               </button>
             </div>
@@ -104,14 +100,6 @@ import { Debtor, CreateDebtDto } from '../../core/models/debt.model';
       margin: 0 auto;
     }
 
-    mat-card {
-      margin-bottom: 20px;
-    }
-
-    mat-card-header {
-      margin-bottom: 20px;
-    }
-
     form {
       display: flex;
       flex-direction: column;
@@ -121,13 +109,24 @@ import { Debtor, CreateDebtDto } from '../../core/models/debt.model';
     .form-actions {
       display: flex;
       justify-content: flex-end;
+      gap: 8px;
       margin-top: 16px;
+    }
+
+    mat-card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    textarea {
+      min-height: 100px;
     }
   `]
 })
 export class DebtFormComponent implements OnInit {
   debtForm: FormGroup;
-  debtors: Debtor[] = [];
+  selectedDebtor?: Debtor;
 
   constructor(
     private fb: FormBuilder,
@@ -136,55 +135,65 @@ export class DebtFormComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute
   ) {
-    const now = new Date();
     this.debtForm = this.fb.group({
-      debtorId: ['', Validators.required],
       amount: ['', [Validators.required, Validators.min(1)]],
-      borrowDate: [now, Validators.required],
-      dueDate: ['', Validators.required],
-      description: ['', Validators.required]
+      borrowDate: [new Date(), [Validators.required]],
+      dueDate: ['', [Validators.required]],
+      description: ['']
     });
   }
 
   ngOnInit(): void {
-    this.loadDebtors();
-    
-    // Если есть параметр debtorId в URL, устанавливаем его в форму
-    const debtorId = this.route.snapshot.queryParamMap.get('debtorId');
-    if (debtorId) {
-      this.debtForm.patchValue({ debtorId: Number(debtorId) });
-    }
+    // Получаем ID должника из параметров URL
+    this.route.queryParams.subscribe(params => {
+      const debtorId = params['debtorId'];
+      if (debtorId) {
+        this.loadDebtor(debtorId);
+      } else {
+        // Если ID должника не указан, перенаправляем на список должников
+        this.router.navigate(['/debtors']);
+      }
+    });
   }
 
-  loadDebtors(): void {
-    this.debtorsService.getDebtors().subscribe({
-      next: (debtors) => {
-        this.debtors = debtors;
+  loadDebtor(id: string): void {
+    this.debtorsService.getDebtor(id).subscribe({
+      next: (debtor) => {
+        this.selectedDebtor = debtor;
       },
       error: (error) => {
-        console.error('Error loading debtors:', error);
+        console.error('Error loading debtor:', error);
+        this.router.navigate(['/debtors']);
       }
     });
   }
 
   onSubmit(): void {
-    if (this.debtForm.valid) {
-      const debt: CreateDebtDto = {
+    if (this.debtForm.valid && this.selectedDebtor) {
+      const debtData = {
         ...this.debtForm.value,
-        borrowDate: this.debtForm.value.borrowDate.toISOString(),
-        dueDate: this.debtForm.value.dueDate.toISOString(),
+        debtorId: this.selectedDebtor.id,
         isPaid: false,
-        isOverdue: false
+        borrowDate: this.debtForm.value.borrowDate.toISOString(),
+        dueDate: this.debtForm.value.dueDate.toISOString()
       };
 
-      this.debtsService.createDebt(debt).subscribe({
+      this.debtsService.createDebt(debtData).subscribe({
         next: () => {
-          this.router.navigate(['/debtors', debt.debtorId]);
+          this.router.navigate(['/debtors']);
         },
         error: (error) => {
           console.error('Error creating debt:', error);
         }
       });
+    }
+  }
+
+  goBack(): void {
+    if (this.selectedDebtor) {
+      this.router.navigate(['/debtors', this.selectedDebtor.id]);
+    } else {
+      this.router.navigate(['/debtors']);
     }
   }
 }
